@@ -1,0 +1,12 @@
+{
+  "domain": "elvio_energy_dashboard",
+  "name": "ELVIO Energy Dashboard",
+  "version": "0.1.0",
+  "documentation": "https://elvio.io",
+  "issue_tracker": "https://elvio.io/support",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": ["@elvio"],
+  "config_flow": true,
+  "iot_class": "local_polling"
+}
