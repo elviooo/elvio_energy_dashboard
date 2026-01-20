@@ -1,6 +1,4 @@
 from homeassistant import config_entries
-from homeassistant.core import callback
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.selector import selector
 
 from .const import (
@@ -13,13 +11,14 @@ from .const import (
 
 class ElvioEnergyDashboardConfigFlow(
     config_entries.ConfigFlow,
-    domain=DOMAIN
+    domain=DOMAIN,
 ):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
         if user_input is not None:
-            return await self.async_step_generation(user_input)
+            self._consumption = user_input[CONF_CONSUMPTION]
+            return await self.async_step_generation()
 
         return self.async_show_form(
             step_id="user",
@@ -27,17 +26,16 @@ class ElvioEnergyDashboardConfigFlow(
                 CONF_CONSUMPTION: selector({
                     "entity": {
                         "domain": "sensor",
-                        "device_class": ["energy", "power"]
+                        "device_class": ["power", "energy"]
                     }
                 })
             },
-            description_placeholders={
-                "description": "Wähle den Haupt-Verbrauchssensor (z. B. Hausverbrauch)"
-            }
         )
 
-    async def async_step_generation(self, user_input):
-        self._consumption = user_input[CONF_CONSUMPTION]
+    async def async_step_generation(self, user_input=None):
+        if user_input is not None:
+            self._generation = user_input[CONF_GENERATION]
+            return await self.async_step_battery()
 
         return self.async_show_form(
             step_id="generation",
@@ -45,26 +43,21 @@ class ElvioEnergyDashboardConfigFlow(
                 CONF_GENERATION: selector({
                     "entity": {
                         "domain": "sensor",
-                        "device_class": ["energy", "power"]
+                        "device_class": ["power", "energy"]
                     }
                 })
             },
-            description_placeholders={
-                "description": "Wähle den Erzeugungssensor (z. B. PV-Anlage)"
-            }
         )
 
     async def async_step_battery(self, user_input=None):
         if user_input is not None:
-            data = {
-                CONF_CONSUMPTION: self._consumption,
-                CONF_GENERATION: self._generation,
-                CONF_BATTERY: user_input.get(CONF_BATTERY),
-            }
-
             return self.async_create_entry(
                 title="ELVIO Energy Dashboard",
-                data=data,
+                data={
+                    CONF_CONSUMPTION: self._consumption,
+                    CONF_GENERATION: self._generation,
+                    CONF_BATTERY: user_input.get(CONF_BATTERY),
+                },
             )
 
         return self.async_show_form(
@@ -73,15 +66,8 @@ class ElvioEnergyDashboardConfigFlow(
                 CONF_BATTERY: selector({
                     "entity": {
                         "domain": "sensor",
-                        "device_class": ["energy", "power"]
+                        "device_class": ["power", "energy"]
                     }
                 })
             },
-            description_placeholders={
-                "description": "Optional: Batteriesensor auswählen (kann übersprungen werden)"
-            }
         )
-
-    async def async_step_generation(self, user_input):
-        self._generation = user_input[CONF_GENERATION]
-        return await self.async_step_battery()
